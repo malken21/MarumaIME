@@ -1,0 +1,62 @@
+package dev.marumasa.marumaime
+
+import android.inputmethodservice.InputMethodService
+import android.os.Bundle
+import android.view.View
+import androidx.annotation.CallSuper
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.ComposeView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.lifecycle.setViewTreeViewModelStoreOwner
+import androidx.savedstate.SavedStateRegistry
+import androidx.savedstate.SavedStateRegistryController
+import androidx.savedstate.SavedStateRegistryOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+
+/**
+ * A base class for [InputMethodService] that supports Jetpack Compose.
+ */
+abstract class BaseComposeInputMethodService : InputMethodService(),
+    LifecycleOwner, ViewModelStoreOwner, SavedStateRegistryOwner {
+
+    private val lifecycleRegistry by lazy { LifecycleRegistry(this) }
+    private val store by lazy { ViewModelStore() }
+    private val savedStateRegistryController by lazy { SavedStateRegistryController.create(this) }
+
+    override val lifecycle: Lifecycle get() = lifecycleRegistry
+    override val viewModelStore: ViewModelStore get() = store
+    override val savedStateRegistry: SavedStateRegistry get() = savedStateRegistryController.savedStateRegistry
+
+    @CallSuper
+    override fun onCreate() {
+        super.onCreate()
+        savedStateRegistryController.performRestore(null)
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
+    }
+
+    @CallSuper
+    override fun onDestroy() {
+        super.onDestroy()
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+        viewModelStore.clear()
+    }
+
+    /**
+     * Create the Compose view for the input method.
+     */
+    abstract fun createComposeInputView(): View
+
+    override fun onCreateInputView(): View {
+        return createComposeInputView().apply {
+            // Set required providers for Compose
+            setViewTreeLifecycleOwner(this@BaseComposeInputMethodService)
+            setViewTreeViewModelStoreOwner(this@BaseComposeInputMethodService)
+            setViewTreeSavedStateRegistryOwner(this@BaseComposeInputMethodService)
+        }
+    }
+}

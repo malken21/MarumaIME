@@ -1,0 +1,50 @@
+# Built artifacts
+bin/
+gen/
+out/
+build/
+
+# Gradle
+.gradle/
+build/
+
+# IDE - IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# IDE - Android Studio
+*.iml
+.idea/modules.xml
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/datasources.xml
+.idea/dataSources.ids
+
+# Android
+capture.png
+captures/
+*.apk
+*.ap_
+*.dex
+*.class
+local.properties
+
+# Log files
+*.log
+
+# NDK
+obj/
+
+# Proguard
+proguard/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
+secrets.xml
+google-services.json
