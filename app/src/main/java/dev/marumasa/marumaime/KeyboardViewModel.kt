@@ -4,16 +4,29 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
 
 enum class KeyboardMode {
     English, Japanese
 }
 
+enum class KeyboardLayout {
+    Qwerty, Flick
+}
+
+enum class FlickDirection {
+    Center, Up, Down, Left, Right
+}
+
 class KeyboardViewModel : ViewModel() {
     var mode by mutableStateOf(KeyboardMode.Japanese)
-    var composingText by mutableStateOf("") // Romaji input
-    var kanaText by mutableStateOf("")      // Converted kana
+    var layout by mutableStateOf(KeyboardLayout.Flick)
+    
+    var composingText by mutableStateOf("") // Romaji or Kana being entered
+    var kanaText by mutableStateOf("")      // Converted kana part
     var candidates by mutableStateOf(listOf<String>())
+    var selectedCandidateIndex by mutableStateOf(-1)
 
     fun onKeyClick(key: String, commit: (String) -> Unit, setComposing: (String) -> Unit) {
         if (mode == KeyboardMode.English) {
@@ -21,51 +34,114 @@ class KeyboardViewModel : ViewModel() {
             return
         }
 
-        // Japanese mode (Romaji)
+        // Japanese mode
         if (key.length == 1 && key[0].isLetter()) {
             composingText += key.lowercase()
-            updateConversion(setComposing)
+            updateRomajiConversion(setComposing)
         } else {
-            // Non-letter keys in Japanese mode
             commitComposing(commit)
             commit(key)
+        }
+    }
+
+    fun onFlick(baseKey: String, direction: FlickDirection, commit: (String) -> Unit, setComposing: (String) -> Unit) {
+        if (mode == KeyboardMode.English) {
+            // English doesn't usually use flick, but we could implement it
+            return
+        }
+
+        val char = getFlickChar(baseKey, direction)
+        if (char != null) {
+            kanaText += char
+            updateCandidates()
+            setComposing(kanaText + composingText)
+        }
+    }
+
+    private fun getFlickChar(baseKey: String, direction: FlickDirection): String? {
+        val mapping = mapOf(
+            "あ" to listOf("あ", "い", "う", "え", "お"),
+            "か" to listOf("か", "き", "く", "け", "こ"),
+            "さ" to listOf("さ", "し", "す", "せ", "そ"),
+            "た" to listOf("た", "ち", "つ", "て", "と"),
+            "な" to listOf("な", "に", "ぬ", "ね", "の"),
+            "は" to listOf("は", "ひ", "ふ", "へ", "ほ"),
+            "ま" to listOf("ま", "み", "む", "め", "も"),
+            "や" to listOf("や", "（", "ゆ", "）", "よ"),
+            "ら" to listOf("ら", "り", "る", "れ", "ろ"),
+            "わ" to listOf("わ", "を", "ん", "ー", "わ"), // simplified
+            "゛゜" to listOf("゛", "゜", "゛", "゜", "゛"),
+            "小" to listOf("小", "小", "小", "小", "小")
+        )
+        val list = mapping[baseKey] ?: return null
+        return when (direction) {
+            FlickDirection.Center -> list[0]
+            FlickDirection.Left -> list[1]
+            FlickDirection.Up -> list[2]
+            FlickDirection.Right -> list[3]
+            FlickDirection.Down -> list[4]
         }
     }
 
     fun onDeleteClick(delete: () -> Unit, setComposing: (String) -> Unit) {
         if (composingText.isNotEmpty()) {
             composingText = composingText.dropLast(1)
-            updateConversion(setComposing)
+            updateRomajiConversion(setComposing)
         } else if (kanaText.isNotEmpty()) {
             kanaText = kanaText.dropLast(1)
+            updateCandidates()
             setComposing(kanaText)
         } else {
             delete()
         }
     }
 
-    private fun updateConversion(setComposing: (String) -> Unit) {
+    private fun updateRomajiConversion(setComposing: (String) -> Unit) {
         val (converted, remaining) = RomajiConverter.convert(composingText)
         if (converted.isNotEmpty()) {
             kanaText += converted
             composingText = remaining
         }
+        updateCandidates()
         setComposing(kanaText + composingText)
-        
-        // Mock candidates
-        if (kanaText.isNotEmpty()) {
-            candidates = listOf(kanaText, "漢字", "変換", "テスト")
-        } else {
+    }
+
+    private fun updateCandidates() {
+        val fullText = kanaText + composingText
+        if (fullText.isEmpty()) {
             candidates = emptyList()
+            selectedCandidateIndex = -1
+            return
+        }
+
+        viewModelScope.launch {
+            candidates = ConversionEngine.convert(fullText)
+            selectedCandidateIndex = -1
+        }
+    }
+
+    fun onSpaceClick(commit: (String) -> Unit, setComposing: (String) -> Unit) {
+        if (candidates.isNotEmpty()) {
+            selectedCandidateIndex = (selectedCandidateIndex + 1) % candidates.size
+            setComposing(candidates[selectedCandidateIndex])
+        } else {
+            commit(" ")
         }
     }
 
     fun commitComposing(commit: (String) -> Unit) {
-        if (kanaText.isNotEmpty() || composingText.isNotEmpty()) {
-            commit(kanaText + composingText)
+        val textToCommit = if (selectedCandidateIndex != -1) {
+            candidates[selectedCandidateIndex]
+        } else {
+            kanaText + composingText
+        }
+
+        if (textToCommit.isNotEmpty()) {
+            commit(textToCommit)
             kanaText = ""
             composingText = ""
             candidates = emptyList()
+            selectedCandidateIndex = -1
         }
     }
 
@@ -74,12 +150,23 @@ class KeyboardViewModel : ViewModel() {
         kanaText = ""
         composingText = ""
         candidates = emptyList()
+        selectedCandidateIndex = -1
     }
 
     fun toggleMode() {
         mode = if (mode == KeyboardMode.English) KeyboardMode.Japanese else KeyboardMode.English
+        resetState()
+    }
+
+    fun toggleLayout() {
+        layout = if (layout == KeyboardLayout.Qwerty) KeyboardLayout.Flick else KeyboardLayout.Qwerty
+        resetState()
+    }
+
+    private fun resetState() {
         kanaText = ""
         composingText = ""
         candidates = emptyList()
+        selectedCandidateIndex = -1
     }
 }

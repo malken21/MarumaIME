@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">MarumaIME</string>
     <string name="ime_name">MarumaIME</string>
+    <string name="settings_name">MarumaIME Settings</string>
 </resources>

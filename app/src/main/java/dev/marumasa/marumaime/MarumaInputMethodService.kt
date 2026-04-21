@@ -33,6 +33,9 @@ class MarumaInputMethodService : BaseComposeInputMethodService() {
 
     override fun onStartInputView(info: android.view.inputmethod.EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
-        // Handle input type changes if needed
+        // Reset state on new input field
+        viewModel.commitComposing { text ->
+            currentInputConnection?.commitText(text, 1)
+        }
     }
 }
