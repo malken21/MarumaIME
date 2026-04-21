@@ -4,17 +4,27 @@ import android.view.View
 import androidx.compose.ui.platform.ComposeView
 import dev.marumasa.marumaime.ui.KeyboardScreen
 
+import androidx.lifecycle.ViewModelProvider
+
 class MarumaInputMethodService : BaseComposeInputMethodService() {
+
+    private val viewModel by lazy {
+        ViewModelProvider(this)[KeyboardViewModel::class.java]
+    }
 
     override fun createComposeInputView(): View {
         return ComposeView(this).apply {
             setContent {
                 KeyboardScreen(
-                    onKeyClick = { text ->
+                    viewModel = viewModel,
+                    onCommit = { text ->
                         currentInputConnection.commitText(text, 1)
                     },
-                    onDeleteClick = {
+                    onDelete = {
                         currentInputConnection.deleteSurroundingText(1, 0)
+                    },
+                    onUpdateComposing = { text ->
+                        currentInputConnection.setComposingText(text, 1)
                     }
                 )
             }

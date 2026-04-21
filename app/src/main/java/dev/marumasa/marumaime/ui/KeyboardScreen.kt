@@ -14,16 +14,20 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.marumasa.marumaime.KeyboardMode
+import dev.marumasa.marumaime.KeyboardViewModel
 
 @Composable
 fun KeyboardScreen(
-    onKeyClick: (String) -> Unit,
-    onDeleteClick: () -> Unit
+    viewModel: KeyboardViewModel,
+    onCommit: (String) -> Unit,
+    onDelete: () -> Unit,
+    onUpdateComposing: (String) -> Unit
 ) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .height(260.dp),
+            .height(300.dp),
         color = Color(0xFFEEEEEE)
     ) {
         Column(
@@ -32,11 +36,31 @@ fun KeyboardScreen(
                 .padding(4.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            val rows = listOf(
-                listOf("Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"),
-                listOf("A", "S", "D", "F", "G", "H", "J", "K", "L"),
-                listOf("Z", "X", "C", "V", "B", "N", "M", "Del")
+            // Candidate Bar
+            CandidateBar(
+                candidates = viewModel.candidates,
+                onCandidateClick = { candidate ->
+                    viewModel.onCandidateClick(candidate, onCommit)
+                    onUpdateComposing("")
+                }
             )
+
+            val rows = if (viewModel.mode == KeyboardMode.English) {
+                listOf(
+                    listOf("Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"),
+                    listOf("A", "S", "D", "F", "G", "H", "J", "K", "L"),
+                    listOf("Z", "X", "C", "V", "B", "N", "M", "Del"),
+                    listOf("Mode", "Space", "Enter")
+                )
+            } else {
+                // Japanese Romaji (QWERTY)
+                listOf(
+                    listOf("Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"),
+                    listOf("A", "S", "D", "F", "G", "H", "J", "K", "L"),
+                    listOf("Z", "X", "C", "V", "B", "N", "M", "Del"),
+                    listOf("Mode", "Space", "Enter")
+                )
+            }
 
             rows.forEach { row ->
                 Row(
@@ -45,17 +69,69 @@ fun KeyboardScreen(
                 ) {
                     row.forEach { key ->
                         KeyButton(
-                            text = key,
+                            text = if (key == "Mode") (if (viewModel.mode == KeyboardMode.English) "EN" else "あ") else key,
                             modifier = Modifier
-                                .weight(if (key == "Del") 1.5f else 1f)
-                                .height(56.dp),
+                                .weight(
+                                    when (key) {
+                                        "Del", "Mode" -> 1.5f
+                                        "Space", "Enter" -> 2f
+                                        else -> 1f
+                                    }
+                                )
+                                .height(52.dp),
                             onClick = {
-                                if (key == "Del") onDeleteClick() else onKeyClick(key)
+                                when (key) {
+                                    "Del" -> viewModel.onDeleteClick(onDelete, onUpdateComposing)
+                                    "Mode" -> viewModel.toggleMode()
+                                    "Space" -> {
+                                        if (viewModel.composingText.isNotEmpty() || viewModel.kanaText.isNotEmpty()) {
+                                            // Conversion logic could go here
+                                        } else {
+                                            onCommit(" ")
+                                        }
+                                    }
+                                    "Enter" -> {
+                                        if (viewModel.composingText.isNotEmpty() || viewModel.kanaText.isNotEmpty()) {
+                                            viewModel.commitComposing(onCommit)
+                                            onUpdateComposing("")
+                                        } else {
+                                            onCommit("\n")
+                                        }
+                                    }
+                                    else -> viewModel.onKeyClick(key, onCommit, onUpdateComposing)
+                                }
                             }
                         )
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun CandidateBar(
+    candidates: List<String>,
+    onCandidateClick: (String) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(40.dp)
+            .background(Color.White)
+            .padding(horizontal = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        candidates.forEach { candidate ->
+            Text(
+                text = candidate,
+                modifier = Modifier
+                    .clickable { onCandidateClick(candidate) }
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                fontSize = 16.sp,
+                color = Color.Black
+            )
         }
     }
 }
