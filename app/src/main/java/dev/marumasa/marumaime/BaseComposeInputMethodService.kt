@@ -79,15 +79,9 @@ abstract class BaseComposeInputMethodService : InputMethodService(),
         
         // Also set owners on the window's decor view to ensure all child views can find them
         window?.window?.decorView?.let { decorView ->
-            if (androidx.lifecycle.ViewTreeLifecycleOwner.get(decorView) == null) {
-                androidx.lifecycle.ViewTreeLifecycleOwner.set(decorView, this)
-            }
-            if (androidx.lifecycle.ViewTreeViewModelStoreOwner.get(decorView) == null) {
-                androidx.lifecycle.ViewTreeViewModelStoreOwner.set(decorView, this)
-            }
-            if (androidx.savedstate.ViewTreeSavedStateRegistryOwner.get(decorView) == null) {
-                androidx.savedstate.ViewTreeSavedStateRegistryOwner.set(decorView, this)
-            }
+            decorView.setViewTreeLifecycleOwner(this)
+            decorView.setViewTreeViewModelStoreOwner(this)
+            decorView.setViewTreeSavedStateRegistryOwner(this)
         }
         
         return createComposeInputView(composeView)
