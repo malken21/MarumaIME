@@ -35,6 +35,7 @@ abstract class BaseComposeInputMethodService : InputMethodService(),
     @CallSuper
     override fun onCreate() {
         super.onCreate()
+        savedStateRegistryController.performAttach()
         savedStateRegistryController.performRestore(null)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
     }
@@ -69,7 +70,26 @@ abstract class BaseComposeInputMethodService : InputMethodService(),
             setViewTreeLifecycleOwner(this@BaseComposeInputMethodService)
             setViewTreeViewModelStoreOwner(this@BaseComposeInputMethodService)
             setViewTreeSavedStateRegistryOwner(this@BaseComposeInputMethodService)
+            
+            // Set composition strategy to dispose when detached from window
+            setViewCompositionStrategy(
+                androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnDetachedFromWindow
+            )
         }
+        
+        // Also set owners on the window's decor view to ensure all child views can find them
+        window?.window?.decorView?.let { decorView ->
+            if (androidx.lifecycle.ViewTreeLifecycleOwner.get(decorView) == null) {
+                androidx.lifecycle.ViewTreeLifecycleOwner.set(decorView, this)
+            }
+            if (androidx.lifecycle.ViewTreeViewModelStoreOwner.get(decorView) == null) {
+                androidx.lifecycle.ViewTreeViewModelStoreOwner.set(decorView, this)
+            }
+            if (androidx.savedstate.ViewTreeSavedStateRegistryOwner.get(decorView) == null) {
+                androidx.savedstate.ViewTreeSavedStateRegistryOwner.set(decorView, this)
+            }
+        }
+        
         return createComposeInputView(composeView)
     }
 }
