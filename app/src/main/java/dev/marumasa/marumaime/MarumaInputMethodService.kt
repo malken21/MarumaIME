@@ -12,19 +12,19 @@ class MarumaInputMethodService : BaseComposeInputMethodService() {
         ViewModelProvider(this)[KeyboardViewModel::class.java]
     }
 
-    override fun createComposeInputView(): View {
-        return ComposeView(this).apply {
+    override fun createComposeInputView(composeView: ComposeView): View {
+        return composeView.apply {
             setContent {
                 KeyboardScreen(
                     viewModel = viewModel,
                     onCommit = { text ->
-                        currentInputConnection.commitText(text, 1)
+                        currentInputConnection?.commitText(text, 1)
                     },
                     onDelete = {
-                        currentInputConnection.deleteSurroundingText(1, 0)
+                        currentInputConnection?.deleteSurroundingText(1, 0)
                     },
                     onUpdateComposing = { text ->
-                        currentInputConnection.setComposingText(text, 1)
+                        currentInputConnection?.setComposingText(text, 1)
                     }
                 )
             }

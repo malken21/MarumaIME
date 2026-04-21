@@ -39,6 +39,18 @@ abstract class BaseComposeInputMethodService : InputMethodService(),
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
     }
 
+    override fun onWindowShown() {
+        super.onWindowShown()
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
+    }
+
+    override fun onWindowHidden() {
+        super.onWindowHidden()
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+    }
+
     @CallSuper
     override fun onDestroy() {
         super.onDestroy()
@@ -49,14 +61,15 @@ abstract class BaseComposeInputMethodService : InputMethodService(),
     /**
      * Create the Compose view for the input method.
      */
-    abstract fun createComposeInputView(): View
+    abstract fun createComposeInputView(composeView: ComposeView): View
 
     override fun onCreateInputView(): View {
-        return createComposeInputView().apply {
-            // Set required providers for Compose
+        val composeView = ComposeView(this).apply {
+            // Set required providers for Compose BEFORE setContent is called
             setViewTreeLifecycleOwner(this@BaseComposeInputMethodService)
             setViewTreeViewModelStoreOwner(this@BaseComposeInputMethodService)
             setViewTreeSavedStateRegistryOwner(this@BaseComposeInputMethodService)
         }
+        return createComposeInputView(composeView)
     }
 }
