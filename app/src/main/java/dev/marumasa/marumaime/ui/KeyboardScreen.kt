@@ -212,15 +212,21 @@ fun FlickLayout(
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 viewModel.onDeleteClick(onDelete, onUpdateComposing)
             }
-            KeyButton("QW", Modifier.fillMaxWidth().weight(1f), backgroundColor = KeyboardColors.Special, contentColor = KeyboardColors.Text) {
-                viewModel.toggleLayout()
+            KeyButton("Space", Modifier.fillMaxWidth().weight(1f), backgroundColor = KeyboardColors.Surface, contentColor = KeyboardColors.Text) {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                viewModel.onSpaceClick(onCommit, onUpdateComposing)
             }
             KeyButton("Enter", Modifier.fillMaxWidth().weight(1.5f), backgroundColor = KeyboardColors.Action, contentColor = Color.White) {
                 viewModel.commitComposing(onCommit)
                 onUpdateComposing("")
             }
-            KeyButton(if (viewModel.mode == KeyboardMode.English) "EN" else "あ", Modifier.fillMaxWidth().weight(1f), backgroundColor = KeyboardColors.Special, contentColor = KeyboardColors.Text) {
-                viewModel.toggleMode()
+            Row(modifier = Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                KeyButton("QW", Modifier.weight(1f).fillMaxHeight(), backgroundColor = KeyboardColors.Special, contentColor = KeyboardColors.Text) {
+                    viewModel.toggleLayout()
+                }
+                KeyButton(if (viewModel.mode == KeyboardMode.English) "EN" else "あ", Modifier.weight(1f).fillMaxHeight(), backgroundColor = KeyboardColors.Special, contentColor = KeyboardColors.Text) {
+                    viewModel.toggleMode()
+                }
             }
         }
     }
