@@ -18,7 +18,8 @@ fun KeyboardScreen(
     onCommit: (String) -> Unit,
     onDelete: () -> Unit,
     onUpdateComposing: (String) -> Unit,
-    onMoveCursor: (CursorDirection) -> Unit
+    onMoveCursor: (CursorDirection) -> Unit,
+    onOpenSettings: () -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
 
@@ -58,7 +59,8 @@ fun KeyboardScreen(
             // Number Row
             NumberRow(
                 onCommit = { viewModel.onKeyClick(it, onCommit, onUpdateComposing) },
-                onClipClick = { viewModel.toggleClipboard() }
+                onClipClick = { viewModel.toggleClipboard() },
+                onSettingsClick = onOpenSettings
             )
 
             Box(

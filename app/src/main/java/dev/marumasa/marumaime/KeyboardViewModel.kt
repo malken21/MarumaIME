@@ -1,14 +1,29 @@
 package dev.marumasa.marumaime
 
+import android.app.Application
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import dev.marumasa.marumaime.data.AppDatabase
+import dev.marumasa.marumaime.data.DictionaryDao
+import dev.marumasa.marumaime.data.DictionaryEntity
+import dev.marumasa.marumaime.data.PredictionDao
+import dev.marumasa.marumaime.data.PredictionEntity
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import java.io.InputStream
+import java.io.OutputStream
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
-
-class KeyboardViewModel : ViewModel() {
+class KeyboardViewModel(
+    private val dictionaryDao: DictionaryDao,
+    private val predictionDao: PredictionDao
+) : ViewModel() {
+    private var lastCommittedWord: String? = null
     var mode by mutableStateOf(KeyboardMode.Japanese)
     var layout by mutableStateOf(KeyboardLayout.Flick)
     
@@ -20,6 +35,8 @@ class KeyboardViewModel : ViewModel() {
     var clipboardHistory by mutableStateOf(listOf<String>())
     var isClipboardVisible by mutableStateOf(false)
     var isShifted by mutableStateOf(false)
+
+    private var conversionJob: Job? = null
 
     fun onKeyClick(key: String, commit: (String) -> Unit, setComposing: (String) -> Unit) {
         if (mode == KeyboardMode.English || mode == KeyboardMode.Symbol) {
@@ -48,7 +65,11 @@ class KeyboardViewModel : ViewModel() {
             if (mode == KeyboardMode.Symbol) {
                 commit(char)
             } else {
-                kanaText += char
+                if (char == "゛" || char == "゜" || char == "小") {
+                    kanaText = KanaModifier.modify(kanaText, char)
+                } else {
+                    kanaText += char
+                }
                 updateCandidates()
                 setComposing(kanaText + composingText)
             }
@@ -85,13 +106,27 @@ class KeyboardViewModel : ViewModel() {
     private fun updateCandidates() {
         val fullText = kanaText + composingText
         if (fullText.isEmpty()) {
-            candidates = emptyList()
-            selectedCandidateIndex = -1
+            val lastWord = lastCommittedWord
+            if (lastWord != null) {
+                viewModelScope.launch {
+                    val predictions = predictionDao.getPredictions(lastWord)
+                    candidates = predictions.map { it.nextWord }
+                    selectedCandidateIndex = -1
+                }
+            } else {
+                candidates = emptyList()
+                selectedCandidateIndex = -1
+            }
             return
         }
 
-        viewModelScope.launch {
-            candidates = ConversionEngine.convert(fullText)
+        conversionJob?.cancel()
+        conversionJob = viewModelScope.launch {
+            val apiCandidates = ConversionEngine.convert(fullText)
+            val dictionaryEntries = dictionaryDao.findByReading(fullText)
+            val dictionaryCandidates = dictionaryEntries.map { it.word }
+            
+            candidates = (dictionaryCandidates + apiCandidates).distinct()
             selectedCandidateIndex = -1
         }
     }
@@ -113,20 +148,35 @@ class KeyboardViewModel : ViewModel() {
         }
 
         if (textToCommit.isNotEmpty()) {
+            val prevWord = lastCommittedWord
+            if (prevWord != null) {
+                viewModelScope.launch {
+                    predictionDao.learn(prevWord, textToCommit)
+                }
+            }
+            lastCommittedWord = textToCommit
+
             commit(textToCommit)
             kanaText = ""
             composingText = ""
-            candidates = emptyList()
-            selectedCandidateIndex = -1
+            updateCandidates()
         }
     }
 
     fun onCandidateClick(candidate: String, commit: (String) -> Unit) {
-        commit(candidate)
+        val textToCommit = candidate
+        val prevWord = lastCommittedWord
+        if (prevWord != null) {
+            viewModelScope.launch {
+                predictionDao.learn(prevWord, textToCommit)
+            }
+        }
+        lastCommittedWord = textToCommit
+
+        commit(textToCommit)
         kanaText = ""
         composingText = ""
-        candidates = emptyList()
-        selectedCandidateIndex = -1
+        updateCandidates()
     }
 
     fun toggleMode() {
@@ -158,9 +208,6 @@ class KeyboardViewModel : ViewModel() {
 
     fun toggleClipboard() {
         isClipboardVisible = !isClipboardVisible
-        if (isClipboardVisible) {
-            // In a real app, we might fetch from ClipboardManager here
-        }
     }
 
     fun onClipboardItemClick(item: String, commit: (String) -> Unit) {
@@ -177,6 +224,46 @@ class KeyboardViewModel : ViewModel() {
             clipboardHistory = currentHistory.take(255)
         } else {
             clipboardHistory = currentHistory
+        }
+    }
+
+    suspend fun importTsv(inputStream: InputStream) = withContext(Dispatchers.IO) {
+        val reader = inputStream.bufferedReader()
+        val entries = mutableListOf<DictionaryEntity>()
+        reader.forEachLine { line ->
+            val parts = line.split("\t")
+            if (parts.size >= 2) {
+                entries.add(
+                    DictionaryEntity(
+                        reading = parts[0],
+                        word = parts[1],
+                        category = parts.getOrElse(2) { "名詞" }
+                    )
+                )
+            }
+        }
+        if (entries.isNotEmpty()) {
+            dictionaryDao.insertAll(entries)
+        }
+    }
+
+    suspend fun exportTsv(outputStream: OutputStream) = withContext(Dispatchers.IO) {
+        val writer = outputStream.bufferedWriter()
+        val entries = dictionaryDao.getAll()
+        entries.forEach { entry ->
+            writer.write("${entry.reading}\t${entry.word}\t${entry.category}\n")
+        }
+        writer.flush()
+    }
+
+    class Factory(private val application: Application) : ViewModelProvider.Factory {
+        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(KeyboardViewModel::class.java)) {
+                val db = AppDatabase.getDatabase(application)
+                @Suppress("UNCHECKED_CAST")
+                return KeyboardViewModel(db.dictionaryDao(), db.predictionDao()) as T
+            }
+            throw IllegalArgumentException("Unknown ViewModel class")
         }
     }
 }

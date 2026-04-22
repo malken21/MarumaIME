@@ -7,7 +7,7 @@ import androidx.compose.ui.unit.dp
 import dev.marumasa.marumaime.ui.theme.KeyboardColors
 
 @Composable
-fun NumberRow(onCommit: (String) -> Unit, onClipClick: () -> Unit) {
+fun NumberRow(onCommit: (String) -> Unit, onClipClick: () -> Unit, onSettingsClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -23,6 +23,15 @@ fun NumberRow(onCommit: (String) -> Unit, onClipClick: () -> Unit) {
             backgroundColor = KeyboardColors.Special,
             contentColor = KeyboardColors.Text,
             onClick = onClipClick
+        )
+        KeyButton(
+            text = "⚙️",
+            modifier = Modifier
+                .width(40.dp)
+                .fillMaxHeight(),
+            backgroundColor = KeyboardColors.Special,
+            contentColor = KeyboardColors.Text,
+            onClick = onSettingsClick
         )
         (1..9).map { it.toString() }.plus("0").forEach { num ->
             KeyButton(

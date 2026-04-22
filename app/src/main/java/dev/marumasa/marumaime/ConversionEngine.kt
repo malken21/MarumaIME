@@ -31,20 +31,20 @@ object ConversionEngine {
             }.body()
 
             val candidates = mutableListOf<String>()
-            // Always add the original kana as the first candidate
-            candidates.add(text)
             
             if (response.isNotEmpty()) {
                 val firstResult = response[0].jsonArray
                 if (firstResult.size > 1) {
                     val words = firstResult[1].jsonArray
                     words.forEach {
-                        val word = it.jsonPrimitive.content
-                        if (word != text) {
-                            candidates.add(word)
-                        }
+                        candidates.add(it.jsonPrimitive.content)
                     }
                 }
+            }
+            
+            // Add the original kana as a candidate if it's not already there
+            if (!candidates.contains(text)) {
+                candidates.add(text)
             }
             candidates.distinct()
         } catch (e: Exception) {

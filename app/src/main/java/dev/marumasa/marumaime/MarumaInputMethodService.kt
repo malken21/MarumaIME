@@ -2,6 +2,7 @@ package dev.marumasa.marumaime
 
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.view.View
 import androidx.compose.ui.platform.ComposeView
 import dev.marumasa.marumaime.ui.KeyboardScreen
@@ -11,7 +12,7 @@ import androidx.lifecycle.ViewModelProvider
 class MarumaInputMethodService : BaseComposeInputMethodService() {
 
     private val viewModel by lazy {
-        ViewModelProvider(this)[KeyboardViewModel::class.java]
+        ViewModelProvider(this, KeyboardViewModel.Factory(application))[KeyboardViewModel::class.java]
     }
 
     override fun createComposeInputView(composeView: ComposeView): View {
@@ -41,6 +42,12 @@ class MarumaInputMethodService : BaseComposeInputMethodService() {
                         currentInputConnection?.sendKeyEvent(
                             android.view.KeyEvent(android.view.KeyEvent.ACTION_UP, keyCode)
                         )
+                    },
+                    onOpenSettings = {
+                        val intent = Intent(this@MarumaInputMethodService, SettingsActivity::class.java).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        startActivity(intent)
                     }
                 )
             }
