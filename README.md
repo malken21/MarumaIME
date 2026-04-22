@@ -1,5 +1,5 @@
 # MarumaIME
-![Screenshot](app/src/test/snapshots/images/dev.marumasa.marumaime.ui_ScreenshotTest_captureKeyboard.png)
+<img src="app/src/test/snapshots/images/dev.marumasa.marumaime.ui_ScreenshotTest_captureKeyboard.png" width="416" />
 
 
 Android向けキーボード（IME）プロジェクト。
