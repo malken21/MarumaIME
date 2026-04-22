@@ -12,12 +12,12 @@ import dev.marumasa.marumaime.data.DictionaryDao
 import dev.marumasa.marumaime.data.DictionaryEntity
 import dev.marumasa.marumaime.data.PredictionDao
 import dev.marumasa.marumaime.data.PredictionEntity
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.InputStream
 import java.io.OutputStream
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 class KeyboardViewModel(
     private val dictionaryDao: DictionaryDao,
@@ -257,7 +257,7 @@ class KeyboardViewModel(
     }
 
     class Factory(private val application: Application) : ViewModelProvider.Factory {
-        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(KeyboardViewModel::class.java)) {
                 val db = AppDatabase.getDatabase(application)
                 @Suppress("UNCHECKED_CAST")

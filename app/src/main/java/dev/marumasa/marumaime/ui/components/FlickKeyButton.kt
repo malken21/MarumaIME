@@ -8,11 +8,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
@@ -101,11 +106,11 @@ fun FlickKeyButton(
                         Brush.radialGradient(
                             colors = listOf(KeyboardColors.Action.copy(alpha = 0.1f), Color.Transparent),
                             center = when (currentDirection) {
-                                FlickDirection.Center -> androidx.compose.ui.geometry.Offset.Unspecified
-                                FlickDirection.Left -> androidx.compose.ui.geometry.Offset(0f, 0.5f)
-                                FlickDirection.Up -> androidx.compose.ui.geometry.Offset(0.5f, 0f)
-                                FlickDirection.Right -> androidx.compose.ui.geometry.Offset(1f, 0.5f)
-                                FlickDirection.Down -> androidx.compose.ui.geometry.Offset(0.5f, 1f)
+                                FlickDirection.Center -> Offset.Unspecified
+                                FlickDirection.Left -> Offset(0f, 0.5f)
+                                FlickDirection.Up -> Offset(0.5f, 0f)
+                                FlickDirection.Right -> Offset(1f, 0.5f)
+                                FlickDirection.Down -> Offset(0.5f, 1f)
                             }
                         )
                     )

@@ -1,10 +1,8 @@
 package dev.marumasa.marumaime
 
 import android.inputmethodservice.InputMethodService
-import android.os.Bundle
 import android.view.View
 import androidx.annotation.CallSuper
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner

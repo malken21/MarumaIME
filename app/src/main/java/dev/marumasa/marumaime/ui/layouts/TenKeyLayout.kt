@@ -1,6 +1,12 @@
 package dev.marumasa.marumaime.ui.layouts
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -8,7 +14,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
-import dev.marumasa.marumaime.*
+import dev.marumasa.marumaime.CursorDirection
+import dev.marumasa.marumaime.FlickMapping
+import dev.marumasa.marumaime.KeyboardMode
+import dev.marumasa.marumaime.KeyboardViewModel
 import dev.marumasa.marumaime.ui.components.FlickKeyButton
 import dev.marumasa.marumaime.ui.components.KeyButton
 import dev.marumasa.marumaime.ui.theme.KeyboardColors

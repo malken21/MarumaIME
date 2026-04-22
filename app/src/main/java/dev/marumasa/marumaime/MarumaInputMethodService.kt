@@ -3,11 +3,12 @@ package dev.marumasa.marumaime
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.view.KeyEvent
 import android.view.View
+import android.view.inputmethod.EditorInfo
 import androidx.compose.ui.platform.ComposeView
-import dev.marumasa.marumaime.ui.KeyboardScreen
-
 import androidx.lifecycle.ViewModelProvider
+import dev.marumasa.marumaime.ui.KeyboardScreen
 
 class MarumaInputMethodService : BaseComposeInputMethodService() {
 
@@ -31,16 +32,16 @@ class MarumaInputMethodService : BaseComposeInputMethodService() {
                     },
                     onMoveCursor = { direction ->
                         val keyCode = when (direction) {
-                            CursorDirection.Up -> android.view.KeyEvent.KEYCODE_DPAD_UP
-                            CursorDirection.Down -> android.view.KeyEvent.KEYCODE_DPAD_DOWN
-                            CursorDirection.Left -> android.view.KeyEvent.KEYCODE_DPAD_LEFT
-                            CursorDirection.Right -> android.view.KeyEvent.KEYCODE_DPAD_RIGHT
+                            CursorDirection.Up -> KeyEvent.KEYCODE_DPAD_UP
+                            CursorDirection.Down -> KeyEvent.KEYCODE_DPAD_DOWN
+                            CursorDirection.Left -> KeyEvent.KEYCODE_DPAD_LEFT
+                            CursorDirection.Right -> KeyEvent.KEYCODE_DPAD_RIGHT
                         }
                         currentInputConnection?.sendKeyEvent(
-                            android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, keyCode)
+                            KeyEvent(KeyEvent.ACTION_DOWN, keyCode)
                         )
                         currentInputConnection?.sendKeyEvent(
-                            android.view.KeyEvent(android.view.KeyEvent.ACTION_UP, keyCode)
+                            KeyEvent(KeyEvent.ACTION_UP, keyCode)
                         )
                     },
                     onOpenSettings = {
@@ -54,7 +55,7 @@ class MarumaInputMethodService : BaseComposeInputMethodService() {
         }
     }
 
-    override fun onStartInputView(info: android.view.inputmethod.EditorInfo?, restarting: Boolean) {
+    override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         // Reset state on new input field
         viewModel.commitComposing { text ->

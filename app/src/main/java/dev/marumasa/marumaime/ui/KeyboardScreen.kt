@@ -1,15 +1,26 @@
 package dev.marumasa.marumaime.ui
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
-import dev.marumasa.marumaime.*
-import dev.marumasa.marumaime.ui.components.*
-import dev.marumasa.marumaime.ui.layouts.*
+import dev.marumasa.marumaime.CursorDirection
+import dev.marumasa.marumaime.KeyboardLayout
+import dev.marumasa.marumaime.KeyboardViewModel
+import dev.marumasa.marumaime.ui.components.CandidateBar
+import dev.marumasa.marumaime.ui.components.ClipboardBar
+import dev.marumasa.marumaime.ui.components.NumberRow
+import dev.marumasa.marumaime.ui.layouts.QwertyLayout
+import dev.marumasa.marumaime.ui.layouts.TenKeyLayout
 import dev.marumasa.marumaime.ui.theme.KeyboardColors
 
 @Composable
