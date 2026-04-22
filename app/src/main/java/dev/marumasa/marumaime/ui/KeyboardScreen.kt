@@ -37,7 +37,8 @@ fun KeyboardScreen(
     viewModel: KeyboardViewModel,
     onCommit: (String) -> Unit,
     onDelete: () -> Unit,
-    onUpdateComposing: (String) -> Unit
+    onUpdateComposing: (String) -> Unit,
+    onMoveCursor: (CursorDirection) -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
 
@@ -52,19 +53,33 @@ fun KeyboardScreen(
                 .padding(4.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            // Candidate Bar
-            CandidateBar(
-                candidates = viewModel.candidates,
-                selectedIndex = viewModel.selectedCandidateIndex,
-                onCandidateClick = { candidate ->
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    viewModel.onCandidateClick(candidate, onCommit)
-                    onUpdateComposing("")
-                }
-            )
+            // Candidate or Clipboard Bar
+            if (viewModel.isClipboardVisible) {
+                ClipboardBar(
+                    history = viewModel.clipboardHistory,
+                    onItemClick = { item ->
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        viewModel.onClipboardItemClick(item, onCommit)
+                    },
+                    onClose = { viewModel.toggleClipboard() }
+                )
+            } else {
+                CandidateBar(
+                    candidates = viewModel.candidates,
+                    selectedIndex = viewModel.selectedCandidateIndex,
+                    onCandidateClick = { candidate ->
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        viewModel.onCandidateClick(candidate, onCommit)
+                        onUpdateComposing("")
+                    }
+                )
+            }
 
             // Number Row
-            NumberRow(onCommit = { viewModel.onKeyClick(it, onCommit, onUpdateComposing) })
+            NumberRow(
+                onCommit = { viewModel.onKeyClick(it, onCommit, onUpdateComposing) },
+                onClipClick = { viewModel.toggleClipboard() }
+            )
 
             Box(
                 modifier = Modifier
@@ -72,9 +87,9 @@ fun KeyboardScreen(
                     .navigationBarsPadding()
             ) {
                 if (viewModel.layout == KeyboardLayout.Flick && viewModel.mode == KeyboardMode.Japanese) {
-                    FlickLayout(viewModel, onCommit, onDelete, onUpdateComposing)
+                    FlickLayout(viewModel, onCommit, onDelete, onUpdateComposing, onMoveCursor)
                 } else {
-                    QwertyLayout(viewModel, onCommit, onDelete, onUpdateComposing)
+                    QwertyLayout(viewModel, onCommit, onDelete, onUpdateComposing, onMoveCursor)
                 }
             }
         }
@@ -82,7 +97,7 @@ fun KeyboardScreen(
 }
 
 @Composable
-fun NumberRow(onCommit: (String) -> Unit) {
+fun NumberRow(onCommit: (String) -> Unit, onClipClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -90,6 +105,15 @@ fun NumberRow(onCommit: (String) -> Unit) {
             .padding(vertical = 2.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
+        KeyButton(
+            text = "📋",
+            modifier = Modifier
+                .width(40.dp)
+                .fillMaxHeight(),
+            backgroundColor = KeyboardColors.Special,
+            contentColor = KeyboardColors.Text,
+            onClick = onClipClick
+        )
         (1..9).map { it.toString() }.plus("0").forEach { num ->
             KeyButton(
                 text = num,
@@ -109,18 +133,19 @@ fun QwertyLayout(
     viewModel: KeyboardViewModel,
     onCommit: (String) -> Unit,
     onDelete: () -> Unit,
-    onUpdateComposing: (String) -> Unit
+    onUpdateComposing: (String) -> Unit,
+    onMoveCursor: (CursorDirection) -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
     val rows = listOf(
         listOf("Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"),
         listOf("A", "S", "D", "F", "G", "H", "J", "K", "L"),
         listOf("Z", "X", "C", "V", "B", "N", "M", "Del"),
-        listOf("Layout", "Space", "Enter", "Mode")
+        listOf("Layout", "Mode", "←", "↓", "↑", "→", "Space", "Enter")
     )
 
     Column(modifier = Modifier.fillMaxSize()) {
-        rows.forEach { row ->
+        rows.forEachIndexed { rowIndex, row ->
             Row(
                 modifier = Modifier.fillMaxWidth().weight(1f).padding(vertical = 2.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)
@@ -130,6 +155,9 @@ fun QwertyLayout(
                         text = when (key) {
                             "Mode" -> if (viewModel.mode == KeyboardMode.English) "EN" else "あ"
                             "Layout" -> if (viewModel.layout == KeyboardLayout.Flick) "12" else "QW"
+                            "Del" -> "⌫"
+                            "Space" -> "␣"
+                            "Enter" -> "⏎"
                             else -> key
                         },
                         modifier = Modifier
@@ -137,7 +165,8 @@ fun QwertyLayout(
                                 when (key) {
                                     "Del" -> 1.5f
                                     "Mode", "Layout" -> 1.2f
-                                    "Space", "Enter" -> 2f
+                                    "Space", "Enter" -> if (rowIndex == 3) 2.5f else 2f
+                                    "←", "↓", "↑", "→" -> 0.8f
                                     else -> 1f
                                 }
                             )
@@ -145,6 +174,7 @@ fun QwertyLayout(
                         backgroundColor = when (key) {
                             "Enter" -> KeyboardColors.Action
                             "Del", "Mode", "Layout" -> KeyboardColors.Special
+                            "←", "↓", "↑", "→" -> KeyboardColors.Special
                             else -> KeyboardColors.Surface
                         },
                         contentColor = when (key) {
@@ -162,6 +192,10 @@ fun QwertyLayout(
                                     viewModel.commitComposing(onCommit)
                                     onUpdateComposing("")
                                 }
+                                "←" -> onMoveCursor(CursorDirection.Left)
+                                "↓" -> onMoveCursor(CursorDirection.Down)
+                                "↑" -> onMoveCursor(CursorDirection.Up)
+                                "→" -> onMoveCursor(CursorDirection.Right)
                                 else -> viewModel.onKeyClick(key, onCommit, onUpdateComposing)
                             }
                         }
@@ -177,7 +211,8 @@ fun FlickLayout(
     viewModel: KeyboardViewModel,
     onCommit: (String) -> Unit,
     onDelete: () -> Unit,
-    onUpdateComposing: (String) -> Unit
+    onUpdateComposing: (String) -> Unit,
+    onMoveCursor: (CursorDirection) -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
     val keys = listOf(
@@ -190,9 +225,40 @@ fun FlickLayout(
     val mapping = FlickMapping.mapping
 
     Row(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.weight(3f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        // Left Column: Configuration (Weight 0.8f)
+        Column(
+            modifier = Modifier.weight(0.8f).padding(end = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Spacer(modifier = Modifier.weight(1.5f))
+            KeyButton(
+                text = "QW",
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                backgroundColor = KeyboardColors.Special,
+                contentColor = KeyboardColors.Text
+            ) {
+                viewModel.toggleLayout()
+            }
+            KeyButton(
+                text = if (viewModel.mode == KeyboardMode.English) "EN" else "あ",
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                backgroundColor = KeyboardColors.Special,
+                contentColor = KeyboardColors.Text
+            ) {
+                viewModel.toggleMode()
+            }
+        }
+
+        // Center Column: Flick Grid (Weight 3f)
+        Column(
+            modifier = Modifier.weight(3f),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
             keys.forEach { row ->
-                Row(modifier = Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
                     row.forEach { key ->
                         val chars = mapping[key] ?: listOf(key, "", "", "", "")
                         FlickKeyButton(
@@ -207,25 +273,78 @@ fun FlickLayout(
                 }
             }
         }
-        Column(modifier = Modifier.weight(1f).padding(start = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            KeyButton("Del", Modifier.fillMaxWidth().weight(1f), backgroundColor = KeyboardColors.Special, contentColor = KeyboardColors.Text) {
+
+        // Right Column: Navigation and Action (Weight 2.0f)
+        Column(
+            modifier = Modifier.weight(2.0f).padding(start = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            // Row 1: Delete (Primary Action)
+            KeyButton(
+                text = "⌫",
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                backgroundColor = KeyboardColors.Special,
+                contentColor = KeyboardColors.Text
+            ) {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 viewModel.onDeleteClick(onDelete, onUpdateComposing)
             }
-            KeyButton("Space", Modifier.fillMaxWidth().weight(1f), backgroundColor = KeyboardColors.Surface, contentColor = KeyboardColors.Text) {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                viewModel.onSpaceClick(onCommit, onUpdateComposing)
+
+            // Row 2: Up Navigation
+            KeyButton(
+                text = "↑",
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                backgroundColor = KeyboardColors.Special,
+                onClick = { onMoveCursor(CursorDirection.Up) }
+            )
+
+            // Row 3: Horizontal & Down Navigation
+            Row(
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                KeyButton(
+                    text = "←",
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    backgroundColor = KeyboardColors.Special,
+                    onClick = { onMoveCursor(CursorDirection.Left) }
+                )
+                KeyButton(
+                    text = "↓",
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    backgroundColor = KeyboardColors.Special,
+                    onClick = { onMoveCursor(CursorDirection.Down) }
+                )
+                KeyButton(
+                    text = "→",
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    backgroundColor = KeyboardColors.Special,
+                    onClick = { onMoveCursor(CursorDirection.Right) }
+                )
             }
-            KeyButton("Enter", Modifier.fillMaxWidth().weight(1.5f), backgroundColor = KeyboardColors.Action, contentColor = Color.White) {
-                viewModel.commitComposing(onCommit)
-                onUpdateComposing("")
-            }
-            Row(modifier = Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                KeyButton("QW", Modifier.weight(1f).fillMaxHeight(), backgroundColor = KeyboardColors.Special, contentColor = KeyboardColors.Text) {
-                    viewModel.toggleLayout()
+
+            // Row 4: Space & Enter (Most used)
+            Row(
+                modifier = Modifier.fillMaxWidth().weight(1.2f),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                KeyButton(
+                    text = "␣",
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    backgroundColor = KeyboardColors.Surface,
+                    contentColor = KeyboardColors.Text
+                ) {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    viewModel.onSpaceClick(onCommit, onUpdateComposing)
                 }
-                KeyButton(if (viewModel.mode == KeyboardMode.English) "EN" else "あ", Modifier.weight(1f).fillMaxHeight(), backgroundColor = KeyboardColors.Special, contentColor = KeyboardColors.Text) {
-                    viewModel.toggleMode()
+                KeyButton(
+                    text = "⏎",
+                    modifier = Modifier.weight(1.2f).fillMaxHeight(),
+                    backgroundColor = KeyboardColors.Action,
+                    contentColor = Color.White
+                ) {
+                    viewModel.commitComposing(onCommit)
+                    onUpdateComposing("")
                 }
             }
         }
@@ -252,8 +371,16 @@ fun FlickKeyButton(
     Box(
         modifier = modifier
             .padding(2.dp)
+            .shadow(elevation = 2.dp, shape = RoundedCornerShape(12.dp))
             .clip(RoundedCornerShape(12.dp))
-            .background(if (isDragging) KeyboardColors.Special else KeyboardColors.Surface)
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        if (isDragging) KeyboardColors.Special else KeyboardColors.Surface,
+                        if (isDragging) KeyboardColors.Special.copy(alpha = 0.9f) else Color.White
+                    )
+                )
+            )
             .pointerInput(Unit) {
                 detectDragGestures(
                     onDragEnd = {
@@ -353,6 +480,56 @@ fun FlickKeyButton(
 }
 
 @Composable
+fun ClipboardBar(
+    history: List<String>,
+    onItemClick: (String) -> Unit,
+    onClose: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp)
+            .background(KeyboardColors.Surface)
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        KeyButton(
+            text = "×",
+            modifier = Modifier
+                .width(40.dp)
+                .fillMaxHeight(),
+            backgroundColor = KeyboardColors.Special,
+            contentColor = KeyboardColors.Text,
+            onClick = onClose
+        )
+        if (history.isEmpty()) {
+            Text(
+                text = "No history",
+                modifier = Modifier.padding(horizontal = 16.dp),
+                fontSize = 16.sp,
+                color = Color.Gray
+            )
+        } else {
+            history.forEach { item ->
+                Text(
+                    text = item.replace("\n", " "),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(KeyboardColors.Action.copy(alpha = 0.1f))
+                        .clickable { onItemClick(item) }
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    fontSize = 18.sp,
+                    maxLines = 1,
+                    color = KeyboardColors.Text
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun CandidateBar(
     candidates: List<String>,
     selectedIndex: Int,
@@ -386,7 +563,7 @@ fun CandidateBar(
                     .background(backgroundColor)
                     .clickable { onCandidateClick(candidate) }
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                fontSize = 18.sp,
+                fontSize = 20.sp,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                 color = textColor
             )
@@ -409,9 +586,16 @@ fun KeyButton(
         modifier = modifier
             .padding(2.dp)
             .scale(scale)
-            .shadow(elevation = 1.dp, shape = RoundedCornerShape(12.dp))
+            .shadow(elevation = 2.dp, shape = RoundedCornerShape(12.dp))
             .clip(RoundedCornerShape(12.dp))
-            .background(backgroundColor)
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        backgroundColor,
+                        backgroundColor.copy(alpha = 0.9f)
+                    )
+                )
+            )
             .pointerInput(Unit) {
                 detectDragGestures(
                     onDragStart = { isPressed = true },

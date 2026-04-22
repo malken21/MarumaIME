@@ -1,5 +1,7 @@
 package dev.marumasa.marumaime
 
+import android.content.ClipboardManager
+import android.content.Context
 import android.view.View
 import androidx.compose.ui.platform.ComposeView
 import dev.marumasa.marumaime.ui.KeyboardScreen
@@ -25,6 +27,20 @@ class MarumaInputMethodService : BaseComposeInputMethodService() {
                     },
                     onUpdateComposing = { text ->
                         currentInputConnection?.setComposingText(text, 1)
+                    },
+                    onMoveCursor = { direction ->
+                        val keyCode = when (direction) {
+                            CursorDirection.Up -> android.view.KeyEvent.KEYCODE_DPAD_UP
+                            CursorDirection.Down -> android.view.KeyEvent.KEYCODE_DPAD_DOWN
+                            CursorDirection.Left -> android.view.KeyEvent.KEYCODE_DPAD_LEFT
+                            CursorDirection.Right -> android.view.KeyEvent.KEYCODE_DPAD_RIGHT
+                        }
+                        currentInputConnection?.sendKeyEvent(
+                            android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, keyCode)
+                        )
+                        currentInputConnection?.sendKeyEvent(
+                            android.view.KeyEvent(android.view.KeyEvent.ACTION_UP, keyCode)
+                        )
                     }
                 )
             }
@@ -36,6 +52,18 @@ class MarumaInputMethodService : BaseComposeInputMethodService() {
         // Reset state on new input field
         viewModel.commitComposing { text ->
             currentInputConnection?.commitText(text, 1)
+        }
+        updateClipboardHistory()
+    }
+
+    private fun updateClipboardHistory() {
+        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clip = clipboard.primaryClip
+        if (clip != null && clip.itemCount > 0) {
+            val text = clip.getItemAt(0).text?.toString()
+            if (text != null) {
+                viewModel.addToClipboard(text)
+            }
         }
     }
 }

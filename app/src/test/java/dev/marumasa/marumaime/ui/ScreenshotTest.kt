@@ -24,7 +24,8 @@ class ScreenshotTest {
                 viewModel = viewModel,
                 onCommit = {},
                 onDelete = {},
-                onUpdateComposing = {}
+                onUpdateComposing = {},
+                onMoveCursor = {}
             )
         }
     }

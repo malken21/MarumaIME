@@ -19,6 +19,10 @@ enum class FlickDirection {
     Center, Up, Down, Left, Right
 }
 
+enum class CursorDirection {
+    Up, Down, Left, Right
+}
+
 class KeyboardViewModel : ViewModel() {
     var mode by mutableStateOf(KeyboardMode.Japanese)
     var layout by mutableStateOf(KeyboardLayout.Flick)
@@ -27,6 +31,9 @@ class KeyboardViewModel : ViewModel() {
     var kanaText by mutableStateOf("")      // Converted kana part
     var candidates by mutableStateOf(listOf<String>())
     var selectedCandidateIndex by mutableStateOf(-1)
+    
+    var clipboardHistory by mutableStateOf(listOf<String>())
+    var isClipboardVisible by mutableStateOf(false)
 
     fun onKeyClick(key: String, commit: (String) -> Unit, setComposing: (String) -> Unit) {
         if (mode == KeyboardMode.English) {
@@ -147,5 +154,30 @@ class KeyboardViewModel : ViewModel() {
         composingText = ""
         candidates = emptyList()
         selectedCandidateIndex = -1
+        isClipboardVisible = false
+    }
+
+    fun toggleClipboard() {
+        isClipboardVisible = !isClipboardVisible
+        if (isClipboardVisible) {
+            // In a real app, we might fetch from ClipboardManager here
+        }
+    }
+
+    fun onClipboardItemClick(item: String, commit: (String) -> Unit) {
+        commit(item)
+        isClipboardVisible = false
+    }
+
+    fun addToClipboard(text: String) {
+        if (text.isBlank()) return
+        val currentHistory = clipboardHistory.toMutableList()
+        currentHistory.remove(text) // Remove if already exists to move to top
+        currentHistory.add(0, text)
+        if (currentHistory.size > 255) {
+            clipboardHistory = currentHistory.take(255)
+        } else {
+            clipboardHistory = currentHistory
+        }
     }
 }
