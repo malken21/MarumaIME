@@ -2,6 +2,7 @@ package dev.marumasa.marumaime.ui.layouts
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -49,12 +50,12 @@ fun TenKeyLayout(
     val mapping = FlickMapping.mapping
 
     Row(modifier = Modifier.fillMaxSize()) {
-        // Left Column: Configuration & Left Navigation (Weight 1.0f)
+        // Left Column: Configuration (Weight 1.2f)
         Column(
-            modifier = Modifier.weight(1.0f).padding(end = 4.dp),
+            modifier = Modifier.weight(1.2f).padding(end = 4.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            // Row 0-1: Shift (Large corner button)
+            // Shift
             KeyButton(
                 text = if (viewModel.isShifted) "⬆️" else "⇧",
                 modifier = Modifier.fillMaxWidth().weight(2f),
@@ -63,24 +64,7 @@ fun TenKeyLayout(
             ) {
                 viewModel.toggleShift()
             }
-            // Row 2: Left Navigation (Aligned with "た")
-            KeyButton(
-                text = "←",
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                backgroundColor = KeyboardColors.Special.copy(alpha = 0.8f),
-                contentColor = KeyboardColors.Action,
-                onClick = { onMoveCursor(CursorDirection.Left) }
-            )
-            // Row 3: Layout Toggle
-            KeyButton(
-                text = "QW",
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                backgroundColor = KeyboardColors.Special,
-                contentColor = KeyboardColors.Text
-            ) {
-                viewModel.toggleLayout()
-            }
-            // Row 4-5: Mode Toggle (Large corner button)
+            // Mode Toggle
             KeyButton(
                 text = when (viewModel.mode) {
                     KeyboardMode.English -> "EN"
@@ -93,26 +77,27 @@ fun TenKeyLayout(
             ) {
                 viewModel.toggleMode()
             }
+            // Layout Toggle
+            KeyButton(
+                text = "QW",
+                modifier = Modifier.fillMaxWidth().weight(2.0f),
+                backgroundColor = KeyboardColors.Special,
+                contentColor = KeyboardColors.Text
+            ) {
+                viewModel.toggleLayout()
+            }
         }
 
-        // Center Column: Flick Grid & Vertical Navigation (Weight 3.2f)
+        // Center Column: Flick Grid & Compact Navigation (Weight 3.6f)
         Column(
-            modifier = Modifier.weight(3.2f),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            modifier = Modifier.weight(3.6f),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Row 0: Up Navigation (Wide)
-            KeyButton(
-                text = "↑",
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                backgroundColor = KeyboardColors.Special.copy(alpha = 0.8f),
-                contentColor = KeyboardColors.Action,
-                onClick = { onMoveCursor(CursorDirection.Up) }
-            )
-
-            // Rows 1-4: Flick Grid
+            // Rows 0-3: Flick Grid (Height 1.3f each)
             keys.forEach { row ->
                 Row(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    modifier = Modifier.fillMaxWidth().weight(1.3f),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     row.forEach { key ->
@@ -129,22 +114,48 @@ fun TenKeyLayout(
                 }
             }
 
-            // Row 5: Down Navigation (Wide)
-            KeyButton(
-                text = "↓",
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                backgroundColor = KeyboardColors.Special.copy(alpha = 0.8f),
-                contentColor = KeyboardColors.Action,
-                onClick = { onMoveCursor(CursorDirection.Down) }
-            )
+            // Row 4: Compact Navigation Row (Height 0.8f)
+            Row(
+                modifier = Modifier.fillMaxWidth().weight(0.8f),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                KeyButton(
+                    text = "←",
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    backgroundColor = KeyboardColors.Special.copy(alpha = 0.8f),
+                    contentColor = KeyboardColors.Action,
+                    onClick = { onMoveCursor(CursorDirection.Left) }
+                )
+                KeyButton(
+                    text = "↑",
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    backgroundColor = KeyboardColors.Special.copy(alpha = 0.8f),
+                    contentColor = KeyboardColors.Action,
+                    onClick = { onMoveCursor(CursorDirection.Up) }
+                )
+                KeyButton(
+                    text = "↓",
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    backgroundColor = KeyboardColors.Special.copy(alpha = 0.8f),
+                    contentColor = KeyboardColors.Action,
+                    onClick = { onMoveCursor(CursorDirection.Down) }
+                )
+                KeyButton(
+                    text = "→",
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    backgroundColor = KeyboardColors.Special.copy(alpha = 0.8f),
+                    contentColor = KeyboardColors.Action,
+                    onClick = { onMoveCursor(CursorDirection.Right) }
+                )
+            }
         }
 
-        // Right Column: Delete, Right Navigation, Space & Enter (Weight 1.8f)
+        // Right Column: Actions (Weight 1.2f)
         Column(
-            modifier = Modifier.weight(1.8f).padding(start = 4.dp),
+            modifier = Modifier.weight(1.2f).padding(start = 4.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            // Row 0-1: Delete (Large corner button)
+            // Delete
             KeyButton(
                 text = "⌫",
                 modifier = Modifier.fillMaxWidth().weight(2f),
@@ -155,19 +166,10 @@ fun TenKeyLayout(
                 viewModel.onDeleteClick(onDelete, onUpdateComposing)
             }
 
-            // Row 2: Right Navigation (Aligned with "は")
-            KeyButton(
-                text = "→",
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                backgroundColor = KeyboardColors.Special.copy(alpha = 0.8f),
-                contentColor = KeyboardColors.Action,
-                onClick = { onMoveCursor(CursorDirection.Right) }
-            )
-
-            // Row 3: Space
+            // Space
             KeyButton(
                 text = "␣",
-                modifier = Modifier.fillMaxWidth().weight(1f),
+                modifier = Modifier.fillMaxWidth().weight(2f),
                 backgroundColor = KeyboardColors.Surface,
                 contentColor = KeyboardColors.Text
             ) {
@@ -175,7 +177,7 @@ fun TenKeyLayout(
                 viewModel.onSpaceClick(onCommit, onUpdateComposing)
             }
 
-            // Row 4-5: Enter (Large corner button)
+            // Enter
             KeyButton(
                 text = "⏎",
                 modifier = Modifier.fillMaxWidth().weight(2f),
