@@ -49,6 +49,5 @@ Thumbs.db
 secrets.xml
 google-services.json
 
-# Snapshots
-**/snapshots/
-**/snapshot/
+# Paparazzi Snapshots
+app/src/test/snapshots/
