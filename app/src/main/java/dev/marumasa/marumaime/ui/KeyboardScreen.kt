@@ -29,7 +29,7 @@ fun KeyboardScreen(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .padding(4.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
@@ -63,7 +63,8 @@ fun KeyboardScreen(
 
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxWidth()
+                    .height(260.dp)
                     .navigationBarsPadding()
             ) {
                 if (viewModel.layout == KeyboardLayout.Flick) {
