@@ -7,21 +7,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 
-enum class KeyboardMode {
-    English, Japanese
-}
-
-enum class KeyboardLayout {
-    Qwerty, Flick
-}
-
-enum class FlickDirection {
-    Center, Up, Down, Left, Right
-}
-
-enum class CursorDirection {
-    Up, Down, Left, Right
-}
 
 class KeyboardViewModel : ViewModel() {
     var mode by mutableStateOf(KeyboardMode.Japanese)
@@ -34,9 +19,10 @@ class KeyboardViewModel : ViewModel() {
     
     var clipboardHistory by mutableStateOf(listOf<String>())
     var isClipboardVisible by mutableStateOf(false)
+    var isShifted by mutableStateOf(false)
 
     fun onKeyClick(key: String, commit: (String) -> Unit, setComposing: (String) -> Unit) {
-        if (mode == KeyboardMode.English) {
+        if (mode == KeyboardMode.English || mode == KeyboardMode.Symbol) {
             commit(key)
             return
         }
@@ -59,14 +45,18 @@ class KeyboardViewModel : ViewModel() {
 
         val char = getFlickChar(baseKey, direction)
         if (char != null) {
-            kanaText += char
-            updateCandidates()
-            setComposing(kanaText + composingText)
+            if (mode == KeyboardMode.Symbol) {
+                commit(char)
+            } else {
+                kanaText += char
+                updateCandidates()
+                setComposing(kanaText + composingText)
+            }
         }
     }
 
     private fun getFlickChar(baseKey: String, direction: FlickDirection): String? {
-        return FlickMapping.getFlickChar(baseKey, direction)
+        return FlickMapping.getFlickChar(baseKey, direction, isShifted)
     }
 
     fun onDeleteClick(delete: () -> Unit, setComposing: (String) -> Unit) {
@@ -140,7 +130,11 @@ class KeyboardViewModel : ViewModel() {
     }
 
     fun toggleMode() {
-        mode = if (mode == KeyboardMode.English) KeyboardMode.Japanese else KeyboardMode.English
+        mode = when (mode) {
+            KeyboardMode.Japanese -> KeyboardMode.English
+            KeyboardMode.English -> KeyboardMode.Symbol
+            KeyboardMode.Symbol -> KeyboardMode.Japanese
+        }
         resetState()
     }
 
@@ -155,6 +149,11 @@ class KeyboardViewModel : ViewModel() {
         candidates = emptyList()
         selectedCandidateIndex = -1
         isClipboardVisible = false
+        isShifted = false
+    }
+
+    fun toggleShift() {
+        isShifted = !isShifted
     }
 
     fun toggleClipboard() {
